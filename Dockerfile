@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y \
 
 # Tell Puppeteer to skip downloading Chrome (we use the system one)
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 WORKDIR /app
