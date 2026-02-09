@@ -7,9 +7,7 @@ function getPool() {
   if (!pool) {
     pool = new Pool({
       connectionString: config.databaseUrl,
-      ssl: config.databaseUrl && config.databaseUrl.includes('neon')
-        ? { rejectUnauthorized: false }
-        : false
+      ssl: config.databaseUrl ? { rejectUnauthorized: false } : false
     });
   }
   return pool;
