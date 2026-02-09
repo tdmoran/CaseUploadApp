@@ -48,14 +48,14 @@ const Review = {
       }
     }
 
-    // Apply default hospital if field is empty
+    // Apply default hospital if field is empty (localStorage is synced from server)
     const hospitalField = document.getElementById('field-hospital');
     if (!hospitalField.value) {
       const defaultHospital = localStorage.getItem('setting-hospital');
       if (defaultHospital) hospitalField.value = defaultHospital;
     }
 
-    // Apply default consultant if field is empty
+    // Apply default consultant if field is empty (localStorage is synced from server)
     const consultantField = document.getElementById('field-consultant');
     if (!consultantField.value) {
       const defaultConsultant = localStorage.getItem('setting-consultant');

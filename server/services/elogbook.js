@@ -1,15 +1,9 @@
 const puppeteer = require('puppeteer');
-const path = require('path');
-const fs = require('fs');
 const config = require('../config');
 const { loadCredentials } = require('./crypto');
+const { query } = require('./db');
 
-const SCREENSHOTS_DIR = path.join(__dirname, '..', '..', 'screenshots');
-
-// Ensure screenshots directory exists
-if (!fs.existsSync(SCREENSHOTS_DIR)) {
-  fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
-}
+const isRender = !!process.env.RENDER;
 
 /**
  * Submit an operation to the eLogbook using browser automation.
@@ -21,29 +15,39 @@ if (!fs.existsSync(SCREENSHOTS_DIR)) {
  * To find the correct selectors:
  * 1. Log into client.elogbook.org in Chrome
  * 2. Navigate to "Add Operation"
- * 3. Right-click each form field → Inspect
+ * 3. Right-click each form field -> Inspect
  * 4. Note the element's id, name, or a unique CSS selector
  * 5. Update config.js with the correct selectors
  */
 async function submitOperation(fields) {
-  const credentials = loadCredentials();
+  const credentials = await loadCredentials();
   if (!credentials) {
     throw new Error('eLogbook credentials not configured. Go to Settings to save your credentials.');
   }
 
   const selectors = config.elogbook.selectors;
   let browser = null;
-  let screenshotPath = null;
 
   try {
-    browser = await puppeteer.launch({
+    const launchOptions = {
       headless: 'new',
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage'
       ]
-    });
+    };
+
+    if (isRender) {
+      launchOptions.executablePath = '/usr/bin/google-chrome-stable';
+      launchOptions.args.push(
+        '--disable-gpu',
+        '--single-process',
+        '--no-zygote'
+      );
+    }
+
+    browser = await puppeteer.launch(launchOptions);
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
@@ -116,10 +120,10 @@ async function submitOperation(fields) {
     await fillField(selectors.duration, fields.duration);
     await fillField(selectors.complications, fields.complications);
 
-    // Take a screenshot before submitting
-    screenshotPath = path.join(SCREENSHOTS_DIR, `pre-submit-${Date.now()}.png`);
-    await page.screenshot({ path: screenshotPath, fullPage: true });
-    console.log('[eLogbook] Pre-submit screenshot saved');
+    // Take a screenshot before submitting (store as base64 in DB)
+    const preScreenshot = await page.screenshot({ encoding: 'base64', fullPage: true });
+    await saveScreenshot(`pre-submit-${Date.now()}`, preScreenshot);
+    console.log('[eLogbook] Pre-submit screenshot saved to DB');
 
     // ---- Step 4: Submit the form ----
     console.log('[eLogbook] Submitting operation...');
@@ -129,9 +133,9 @@ async function submitOperation(fields) {
     await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {});
 
     // Take post-submit screenshot
-    const postScreenshot = path.join(SCREENSHOTS_DIR, `post-submit-${Date.now()}.png`);
-    await page.screenshot({ path: postScreenshot, fullPage: true });
-    console.log('[eLogbook] Post-submit screenshot saved');
+    const postScreenshot = await page.screenshot({ encoding: 'base64', fullPage: true });
+    await saveScreenshot(`post-submit-${Date.now()}`, postScreenshot);
+    console.log('[eLogbook] Post-submit screenshot saved to DB');
 
     // Check for success (look for error messages on page)
     const pageContent = await page.content();
@@ -143,7 +147,7 @@ async function submitOperation(fields) {
     }
 
     console.log('[eLogbook] Operation submitted successfully');
-    return { success: true, screenshot: postScreenshot };
+    return { success: true };
 
   } catch (err) {
     // Take error screenshot
@@ -151,8 +155,8 @@ async function submitOperation(fields) {
       try {
         const pages = await browser.pages();
         if (pages.length > 0) {
-          const errorScreenshot = path.join(SCREENSHOTS_DIR, `error-${Date.now()}.png`);
-          await pages[0].screenshot({ path: errorScreenshot, fullPage: true });
+          const errorScreenshot = await pages[0].screenshot({ encoding: 'base64', fullPage: true });
+          await saveScreenshot(`error-${Date.now()}`, errorScreenshot);
         }
       } catch {}
     }
@@ -161,6 +165,18 @@ async function submitOperation(fields) {
     if (browser) {
       await browser.close();
     }
+  }
+}
+
+async function saveScreenshot(name, base64Data) {
+  try {
+    await query(
+      `INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, NOW())
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+      [`screenshot:${name}`, base64Data]
+    );
+  } catch (err) {
+    console.warn('[eLogbook] Failed to save screenshot to DB:', err.message);
   }
 }
 

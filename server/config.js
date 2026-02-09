@@ -4,6 +4,7 @@ module.exports = {
   port: process.env.PORT || 3000,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   encryptionKey: process.env.ENCRYPTION_KEY,
+  databaseUrl: process.env.DATABASE_URL,
   maxFileSize: 10 * 1024 * 1024, // 10MB
 
   // eLogbook form selectors - update these if eLogbook changes their UI

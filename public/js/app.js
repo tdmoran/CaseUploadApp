@@ -128,11 +128,11 @@ const App = {
     submitBtn.disabled = true;
 
     // Add to history as pending
-    const historyId = this.addToHistory(fields, 'pending');
+    const historyId = await this.addToHistory(fields, 'pending');
 
     try {
       const result = await API.submitToElogbook(fields);
-      this.updateHistoryStatus(historyId, 'success');
+      await this.updateHistoryStatus(historyId, 'success');
       this.showToast('Submitted to eLogbook', 'success');
 
       // Reset and go to capture
@@ -141,7 +141,7 @@ const App = {
       this.showScreen('capture');
       this.updateStats();
     } catch (err) {
-      this.updateHistoryStatus(historyId, 'failed');
+      await this.updateHistoryStatus(historyId, 'failed');
       this.showToast(err.message || 'Submission failed', 'error');
     } finally {
       submitBtn.classList.remove('loading');
@@ -151,21 +151,39 @@ const App = {
 
   // ---- Settings ----
 
-  loadSettings() {
+  async loadSettings() {
+    // Load from localStorage first (instant)
     const fields = ['username', 'password', 'hospital', 'consultant'];
     fields.forEach(f => {
       const el = document.getElementById(`setting-${f}`);
       const val = localStorage.getItem(`setting-${f}`);
       if (el && val) el.value = val;
     });
+
+    // Then sync from server
+    const serverSettings = await API.getSettings();
+    if (serverSettings) {
+      for (const [key, value] of Object.entries(serverSettings)) {
+        localStorage.setItem(`setting-${key}`, value);
+        const el = document.getElementById(`setting-${key}`);
+        if (el) el.value = value;
+      }
+    }
   },
 
   async saveSettings() {
+    const settingsToSync = {};
     const fields = ['hospital', 'consultant'];
     fields.forEach(f => {
       const el = document.getElementById(`setting-${f}`);
-      if (el) localStorage.setItem(`setting-${f}`, el.value);
+      if (el) {
+        localStorage.setItem(`setting-${f}`, el.value);
+        settingsToSync[f] = el.value;
+      }
     });
+
+    // Sync settings to server
+    await API.saveSettings(settingsToSync);
 
     // Save credentials to server (encrypted)
     const username = document.getElementById('setting-username').value;
@@ -193,13 +211,30 @@ const App = {
 
   // ---- History ----
 
-  loadHistory() {
-    const history = this.getHistory();
-    this.renderHistory(history);
+  async loadHistory() {
+    // Load from localStorage first (instant)
+    const localHistory = this.getLocalHistory();
+    this.renderHistory(localHistory);
     this.updateStats();
+
+    // Then sync from server
+    const serverCases = await API.getCases();
+    if (serverCases) {
+      // Convert server format to local format
+      const history = serverCases.map(c => ({
+        id: c.id,
+        procedure: c.procedure_name || 'Unknown procedure',
+        date: c.op_date || '',
+        timestamp: c.created_at,
+        status: c.status
+      }));
+      localStorage.setItem('case-history', JSON.stringify(history));
+      this.renderHistory(history);
+      this.updateStats();
+    }
   },
 
-  getHistory() {
+  getLocalHistory() {
     try {
       return JSON.parse(localStorage.getItem('case-history') || '[]');
     } catch {
@@ -207,8 +242,12 @@ const App = {
     }
   },
 
-  addToHistory(fields, status) {
-    const history = this.getHistory();
+  getHistory() {
+    return this.getLocalHistory();
+  },
+
+  async addToHistory(fields, status) {
+    const history = this.getLocalHistory();
     const entry = {
       id: Date.now().toString(36),
       procedure: fields.procedure || 'Unknown procedure',
@@ -221,17 +260,30 @@ const App = {
     if (history.length > 100) history.pop();
     localStorage.setItem('case-history', JSON.stringify(history));
     this.renderHistory(history);
+
+    // Sync to server
+    API.saveCase({
+      id: entry.id,
+      procedure: entry.procedure,
+      date: entry.date,
+      status: entry.status,
+      fields
+    });
+
     return entry.id;
   },
 
-  updateHistoryStatus(id, status) {
-    const history = this.getHistory();
+  async updateHistoryStatus(id, status) {
+    const history = this.getLocalHistory();
     const entry = history.find(h => h.id === id);
     if (entry) {
       entry.status = status;
       localStorage.setItem('case-history', JSON.stringify(history));
       this.renderHistory(history);
     }
+
+    // Sync to server
+    API.updateCaseStatus(id, status);
   },
 
   renderHistory(history) {
@@ -260,7 +312,7 @@ const App = {
   },
 
   updateStats() {
-    const history = this.getHistory();
+    const history = this.getLocalHistory();
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);

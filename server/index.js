@@ -4,9 +4,12 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const config = require('./config');
+const { initDb } = require('./services/db');
 
 const extractRoute = require('./routes/extract');
 const submitRoute = require('./routes/submit');
+const casesRoute = require('./routes/cases');
+const settingsRoute = require('./routes/settings');
 
 const app = express();
 
@@ -42,6 +45,8 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // API routes
 app.use('/api/extract', extractRoute);
 app.use('/api/submit', submitRoute);
+app.use('/api/cases', casesRoute);
+app.use('/api/settings', settingsRoute);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -53,7 +58,24 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
-app.listen(config.port, () => {
-  console.log(`CaseUploadApp server running on port ${config.port}`);
-  console.log(`Open http://localhost:${config.port} in your browser`);
-});
+// Initialize database then start server
+async function start() {
+  if (config.databaseUrl) {
+    try {
+      await initDb();
+      console.log('[DB] Connected to PostgreSQL');
+    } catch (err) {
+      console.error('[DB] Failed to initialize database:', err.message);
+      process.exit(1);
+    }
+  } else {
+    console.warn('[DB] No DATABASE_URL set — running without database (local dev mode)');
+  }
+
+  app.listen(config.port, () => {
+    console.log(`CaseUploadApp server running on port ${config.port}`);
+    console.log(`Open http://localhost:${config.port} in your browser`);
+  });
+}
+
+start();

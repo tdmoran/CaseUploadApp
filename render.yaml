@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: case-upload-app
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: RENDER
+        value: "true"
+      - key: NODE_ENV
+        value: production

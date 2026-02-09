@@ -1,10 +1,8 @@
 const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
 const config = require('../config');
+const { query } = require('./db');
 
 const ALGORITHM = 'aes-256-gcm';
-const CREDENTIALS_FILE = path.join(__dirname, '..', '..', 'credentials.enc');
 
 function getKey() {
   const key = config.encryptionKey;
@@ -41,18 +39,24 @@ function decrypt(encryptedStr) {
   return decrypted;
 }
 
-function saveCredentials(username, password) {
+async function saveCredentials(username, password) {
   const data = JSON.stringify({ username, password });
   const encrypted = encrypt(data);
-  fs.writeFileSync(CREDENTIALS_FILE, encrypted, 'utf8');
+
+  // Upsert: delete existing row, insert new one (single-user table)
+  await query('DELETE FROM credentials');
+  await query(
+    'INSERT INTO credentials (username, password_encrypted) VALUES ($1, $2)',
+    [username, encrypted]
+  );
 }
 
-function loadCredentials() {
-  if (!fs.existsSync(CREDENTIALS_FILE)) {
+async function loadCredentials() {
+  const result = await query('SELECT password_encrypted FROM credentials LIMIT 1');
+  if (result.rows.length === 0) {
     return null;
   }
-  const encrypted = fs.readFileSync(CREDENTIALS_FILE, 'utf8');
-  const decrypted = decrypt(encrypted);
+  const decrypted = decrypt(result.rows[0].password_encrypted);
   return JSON.parse(decrypted);
 }
 

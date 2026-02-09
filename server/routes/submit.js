@@ -36,7 +36,7 @@ router.post('/credentials', async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    saveCredentials(username, password);
+    await saveCredentials(username, password);
     res.json({ success: true, message: 'Credentials saved securely' });
   } catch (err) {
     console.error('[Credentials] Error:', err.message);
