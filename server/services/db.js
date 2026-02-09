@@ -5,10 +5,25 @@ let pool = null;
 
 function getPool() {
   if (!pool) {
-    pool = new Pool({
-      connectionString: config.databaseUrl,
-      ssl: config.databaseUrl ? { rejectUnauthorized: false } : false
-    });
+    const dbUrl = config.databaseUrl;
+
+    // Support split env vars (DB_HOST, DB_USER, etc.) as fallback
+    // in case DATABASE_URL gets mangled by the hosting platform
+    if (dbUrl) {
+      pool = new Pool({
+        connectionString: dbUrl,
+        ssl: { rejectUnauthorized: false }
+      });
+    } else if (process.env.DB_HOST) {
+      pool = new Pool({
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT || '5432'),
+        database: process.env.DB_NAME,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        ssl: { rejectUnauthorized: false }
+      });
+    }
   }
   return pool;
 }

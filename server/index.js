@@ -61,7 +61,7 @@ app.get('*', (req, res) => {
 
 // Initialize database then start server
 async function start() {
-  if (config.databaseUrl) {
+  if (config.databaseUrl || process.env.DB_HOST) {
     try {
       await initDb();
       console.log('[DB] Connected to PostgreSQL');
