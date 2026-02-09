@@ -4,8 +4,10 @@ const Camera = {
   currentImageBase64: null,
 
   init() {
-    const input = document.getElementById('camera-input');
-    input.addEventListener('change', (e) => this.handleCapture(e));
+    const cameraInput = document.getElementById('camera-input');
+    const libraryInput = document.getElementById('library-input');
+    cameraInput.addEventListener('change', (e) => this.handleCapture(e));
+    libraryInput.addEventListener('change', (e) => this.handleCapture(e));
   },
 
   handleCapture(event) {
@@ -48,6 +50,7 @@ const Camera = {
   reset() {
     this.currentImageBase64 = null;
     document.getElementById('camera-input').value = '';
+    document.getElementById('library-input').value = '';
     document.getElementById('preview-image').src = '';
   }
 };

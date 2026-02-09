@@ -246,6 +246,19 @@ body {
   font-size: 12px;
 }
 
+.capture-alt {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.capture-alt label {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
 .capture-stats {
   display: flex;
   align-items: center;
