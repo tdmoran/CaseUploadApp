@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a2e2f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>CaseUpload</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <!-- App Shell -->
+  <div id="app">
+
+    <!-- Header -->
+    <header id="app-header">
+      <div class="header-inner">
+        <div class="header-brand">
+          <span class="brand-mark">+</span>
+          <span class="brand-text">CaseUpload</span>
+        </div>
+        <div class="header-status">
+          <span id="connection-dot" class="status-dot online"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Screen: Capture -->
+    <section id="screen-capture" class="screen active">
+      <div class="capture-container">
+        <div class="capture-hero">
+          <div class="capture-ring">
+            <div class="capture-ring-inner">
+              <div class="capture-btn-wrap">
+                <label for="camera-input" class="capture-btn" id="capture-label">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                </label>
+                <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+              </div>
+            </div>
+          </div>
+          <p class="capture-instruction">Tap to photograph<br><span class="capture-sub">operation note</span></p>
+        </div>
+
+        <div class="capture-stats">
+          <div class="stat-card">
+            <span class="stat-num" id="stat-today">0</span>
+            <span class="stat-label">Today</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-card">
+            <span class="stat-num" id="stat-week">0</span>
+            <span class="stat-label">This week</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-card">
+            <span class="stat-num" id="stat-total">0</span>
+            <span class="stat-label">Total</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen: Preview -->
+    <section id="screen-preview" class="screen">
+      <div class="preview-container">
+        <div class="preview-image-wrap">
+          <img id="preview-image" alt="Captured operation note">
+          <div id="preview-loader" class="preview-overlay hidden">
+            <div class="loader-content">
+              <div class="pulse-ring"></div>
+              <span class="loader-text">Extracting fields</span>
+              <span class="loader-sub">Reading handwritten note...</span>
+            </div>
+          </div>
+        </div>
+        <div class="preview-actions">
+          <button id="btn-retake" class="btn btn-ghost">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Retake
+          </button>
+          <button id="btn-extract" class="btn btn-primary">
+            Extract Fields
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen: Review -->
+    <section id="screen-review" class="screen">
+      <div class="review-container">
+        <div class="review-header">
+          <button id="btn-back-capture" class="btn-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <h2 class="review-title">Review Fields</h2>
+          <span class="review-badge" id="confidence-badge">--</span>
+        </div>
+
+        <form id="review-form" class="review-form">
+          <!-- Date -->
+          <div class="field-group" data-field="date">
+            <label class="field-label">Date of Operation</label>
+            <input type="date" id="field-date" class="field-input">
+          </div>
+
+          <!-- Hospital -->
+          <div class="field-group" data-field="hospital">
+            <label class="field-label">Hospital</label>
+            <input type="text" id="field-hospital" class="field-input" placeholder="Hospital name">
+          </div>
+
+          <!-- Patient DOB -->
+          <div class="field-group" data-field="patientDob">
+            <label class="field-label">Patient DOB</label>
+            <input type="date" id="field-patient-dob" class="field-input">
+          </div>
+
+          <!-- Patient Sex -->
+          <div class="field-group" data-field="patientSex">
+            <label class="field-label">Patient Sex</label>
+            <select id="field-patient-sex" class="field-input">
+              <option value="">Select...</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+
+          <!-- Procedure -->
+          <div class="field-group" data-field="procedure">
+            <label class="field-label">Procedure</label>
+            <input type="text" id="field-procedure" class="field-input" placeholder="Procedure name" list="procedure-list">
+            <datalist id="procedure-list">
+              <option value="Tonsillectomy">
+              <option value="Adenoidectomy">
+              <option value="Adenotonsillectomy">
+              <option value="Septoplasty">
+              <option value="Septorhinoplasty">
+              <option value="Functional Endoscopic Sinus Surgery (FESS)">
+              <option value="Myringotomy and Grommets">
+              <option value="Tympanoplasty">
+              <option value="Mastoidectomy">
+              <option value="Cortical Mastoidectomy">
+              <option value="Modified Radical Mastoidectomy">
+              <option value="Stapedectomy">
+              <option value="Cochlear Implant">
+              <option value="Microlaryngoscopy">
+              <option value="Direct Laryngoscopy">
+              <option value="Panendoscopy">
+              <option value="Tracheostomy">
+              <option value="Thyroidectomy">
+              <option value="Hemithyroidectomy">
+              <option value="Total Thyroidectomy">
+              <option value="Parathyroidectomy">
+              <option value="Parotidectomy">
+              <option value="Superficial Parotidectomy">
+              <option value="Submandibular Gland Excision">
+              <option value="Neck Dissection">
+              <option value="Selective Neck Dissection">
+              <option value="Modified Radical Neck Dissection">
+              <option value="Excision of Branchial Cyst">
+              <option value="Excision of Thyroglossal Cyst">
+              <option value="Turbinate Reduction">
+              <option value="Pinnaplasty">
+              <option value="EUA Ear">
+              <option value="EUA Nose">
+              <option value="Nasal Polypectomy">
+              <option value="Nasal Fracture Reduction (MUA Nose)">
+              <option value="Ossiculoplasty">
+              <option value="Bone Anchored Hearing Aid (BAHA)">
+              <option value="Pharyngoscopy">
+              <option value="Oesophagoscopy">
+              <option value="Foreign Body Removal - Ear">
+              <option value="Foreign Body Removal - Nose">
+              <option value="Foreign Body Removal - Throat">
+              <option value="Drainage of Peritonsillar Abscess (Quinsy)">
+              <option value="Uvulopalatopharyngoplasty (UPPP)">
+              <option value="Endoscopic DCR (Dacryocystorhinostomy)">
+              <option value="Sialendoscopy">
+            </datalist>
+          </div>
+
+          <!-- CEPOD -->
+          <div class="field-group" data-field="cepod">
+            <label class="field-label">CEPOD / Urgency</label>
+            <select id="field-cepod" class="field-input">
+              <option value="">Select...</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="Urgent">Urgent</option>
+              <option value="Emergency">Emergency</option>
+            </select>
+          </div>
+
+          <!-- ASA Grade -->
+          <div class="field-group" data-field="asaGrade">
+            <label class="field-label">ASA Grade</label>
+            <select id="field-asa-grade" class="field-input">
+              <option value="">Select...</option>
+              <option value="1">1 - Fit and well</option>
+              <option value="2">2 - Mild systemic disease</option>
+              <option value="3">3 - Significant systemic disease</option>
+              <option value="4">4 - Life threatening disease</option>
+              <option value="5">5 - Not expected to survive 24hrs</option>
+            </select>
+          </div>
+
+          <!-- Supervision -->
+          <div class="field-group" data-field="supervision">
+            <label class="field-label">Supervision Level</label>
+            <select id="field-supervision" class="field-input">
+              <option value="">Select...</option>
+              <option value="Performed">Performed</option>
+              <option value="Supervised - trainer scrubbed">Supervised - trainer scrubbed</option>
+              <option value="Supervised - trainer unscrubbed">Supervised - trainer unscrubbed</option>
+              <option value="Assisting">Assisting</option>
+              <option value="Training juniors">Training juniors</option>
+            </select>
+          </div>
+
+          <!-- Consultant -->
+          <div class="field-group" data-field="consultant">
+            <label class="field-label">Responsible Consultant</label>
+            <input type="text" id="field-consultant" class="field-input" placeholder="Consultant name">
+          </div>
+
+          <!-- Side -->
+          <div class="field-group" data-field="side">
+            <label class="field-label">Side</label>
+            <select id="field-side" class="field-input">
+              <option value="">Select...</option>
+              <option value="Left">Left</option>
+              <option value="Right">Right</option>
+              <option value="Bilateral">Bilateral</option>
+              <option value="N/A">N/A</option>
+            </select>
+          </div>
+
+          <!-- Anaesthetic -->
+          <div class="field-group" data-field="anaesthetic">
+            <label class="field-label">Anaesthetic Type</label>
+            <select id="field-anaesthetic" class="field-input">
+              <option value="">Select...</option>
+              <option value="GA">GA</option>
+              <option value="LA">LA</option>
+              <option value="Sedation">Sedation</option>
+            </select>
+          </div>
+
+          <!-- Start Time -->
+          <div class="field-row">
+            <div class="field-group" data-field="startTime">
+              <label class="field-label">Start Time</label>
+              <input type="time" id="field-start-time" class="field-input">
+            </div>
+            <div class="field-group" data-field="duration">
+              <label class="field-label">Duration (min)</label>
+              <input type="number" id="field-duration" class="field-input" placeholder="mins" min="0">
+            </div>
+          </div>
+
+          <!-- Complications -->
+          <div class="field-group" data-field="complications">
+            <label class="field-label">Complications</label>
+            <select id="field-complications" class="field-input">
+              <option value="">Select...</option>
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+
+          <button type="submit" id="btn-submit" class="btn btn-primary btn-full">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg>
+            Submit to eLogbook
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Screen: History -->
+    <section id="screen-history" class="screen">
+      <div class="history-container">
+        <div class="history-header">
+          <h2 class="screen-title">History</h2>
+        </div>
+        <div id="history-list" class="history-list">
+          <div class="history-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <p>No submissions yet</p>
+            <span>Captured operations will appear here</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen: Settings -->
+    <section id="screen-settings" class="screen">
+      <div class="settings-container">
+        <div class="settings-header">
+          <h2 class="screen-title">Settings</h2>
+        </div>
+
+        <form id="settings-form" class="settings-form">
+          <div class="settings-section">
+            <h3 class="settings-section-title">eLogbook Credentials</h3>
+            <div class="field-group">
+              <label class="field-label">Username</label>
+              <input type="text" id="setting-username" class="field-input" placeholder="eLogbook username" autocomplete="username">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Password</label>
+              <input type="password" id="setting-password" class="field-input" placeholder="eLogbook password" autocomplete="current-password">
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section-title">Defaults</h3>
+            <div class="field-group">
+              <label class="field-label">Hospital</label>
+              <input type="text" id="setting-hospital" class="field-input" placeholder="Default hospital name">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Consultant</label>
+              <input type="text" id="setting-consultant" class="field-input" placeholder="Default consultant name">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Settings
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottom-nav">
+      <button class="nav-item active" data-screen="capture">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <span>Capture</span>
+      </button>
+      <button class="nav-item" data-screen="history">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>History</span>
+      </button>
+      <button class="nav-item" data-screen="settings">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/camera.js"></script>
+  <script src="/js/review.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

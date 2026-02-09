@@ -1,0 +1,22 @@
+{
+  "name": "case-upload-app",
+  "version": "1.0.0",
+  "description": "Mobile app for capturing operation notes and uploading to RCS eLogbook",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "keywords": ["surgery", "elogbook", "ocr", "pwa"],
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "express": "^4.21.0",
+    "multer": "^1.4.5-lts.1",
+    "puppeteer": "^23.0.0",
+    "dotenv": "^16.4.0",
+    "cors": "^2.8.5",
+    "helmet": "^8.0.0",
+    "express-rate-limit": "^7.4.0"
+  }
+}
